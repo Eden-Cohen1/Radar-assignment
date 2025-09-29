@@ -69,6 +69,7 @@ def main(
         noverlap=stft_overlap,
         nfft=stft_window,
         boundary=None,
+        return_onesided=False,
     )
 
     typer.echo("📊 Plotting time trace, frequency sweep, FFT magnitudes, and spectrogram…")

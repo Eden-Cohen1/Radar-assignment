@@ -144,7 +144,7 @@ Keep your generated outputs handy by copying them into an `artifacts/` folder (a
 - `out_02_raw_psd.png`, `out_02_shift_psd.png`, `out_02_lpf_psd.png`, `out_02_lpf_spectrogram.png`
 - `out_03_range_cfar.png`, `out_03_detections.csv`
 - `out_04_rd_frame0.png`, `out_04_rd_frame1.png`, `out_04_rd_frame2.png`
-- A short `report.md` with the reflection answers below (1–3 sentences each is plenty).
+- Copy `report_template.md` to `report.md` and answer the reflections below (1–3 sentences each is plenty).
 
 Reflection prompts:
 1. Step 1: What changed when you switched from the rectangular FFT to the Hann-windowed FFT, and why does that matter for radar processing?
@@ -163,6 +163,7 @@ radar-zero-to-60/
   02_iq_ops.py
   03_fmcw_range_cfar.py
   04_rd_realdata.py
+  report_template.md
   README.md
 ```
 

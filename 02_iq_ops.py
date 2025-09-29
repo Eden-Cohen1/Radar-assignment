@@ -77,6 +77,7 @@ def save_spectrogram(sig: np.ndarray, filename: str, fs: float) -> None:
         noverlap=1_536,
         nfft=2_048,
         boundary=None,
+        return_onesided=False,
     )
     plt.figure(figsize=(7, 4))
     plt.pcolormesh(t_s, f_s / 1e3, mag_db(stft_mat), shading="auto")
