@@ -91,7 +91,7 @@ Open the folder in VS Code and pick the `.venv` interpreter (`Python: Select Int
   ```bash
   uv run python 03_fmcw_range_cfar.py
   ```
-- **Deliverable:** `out_03_range_cfar.png`; console prints the theoretical `ΔR` and detected ranges.
+- **Deliverables:** `out_03_range_cfar.png`, `out_03_detections.csv` (per-range CSV); console prints theoretical `ΔR` and detected ranges.
 - **Key relations (with intuition):**
   - `R = c * f_b / (2 * S)` where `S = B / Tc`. (Beat frequency grows with round-trip delay.)
   - `ΔR = c / (2 * B)`. (More bandwidth squeezes range bins closer together.)
@@ -124,6 +124,7 @@ Open the folder in VS Code and pick the `.venv` interpreter (`Python: Select Int
 - **Sanity checks (intuition):**
   - Stationary clutter clusters near zero Doppler; movers appear at ± Doppler bins.
   - CFAR parameters control the false alarm vs miss balance.
+  - Colorbar + shared dB range make it easy to compare frames at a glance.
   - HDF5 behaves like folders (groups) containing NumPy-like datasets.
 
 ---

@@ -69,6 +69,7 @@ def main() -> None:
     plt.tight_layout()
     output_path = "out_01_fft_spectrogram.png"
     plt.savefig(output_path, dpi=160)
+    plt.close()
     print(f"Wrote {output_path}")
 
 

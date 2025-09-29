@@ -3,9 +3,11 @@ Run with: uv run python 04_rd_realdata.py
 """
 from __future__ import annotations
 
-import numpy as np
-import matplotlib.pyplot as plt
+from pathlib import Path
+
 import h5py
+import matplotlib.pyplot as plt
+import numpy as np
 
 DATA_PATH = "data/simerad60.hdf5"
 DETECTIONS_TO_RENDER = 3  # number of frames to visualise
@@ -58,16 +60,23 @@ def cfar2d_db(
     doppler_guard, range_guard = guard
     doppler_train, range_train = train
 
-    mat_lin = 10.0 ** (mat_db / 20.0)
-    detections = np.zeros_like(mat_lin, dtype=bool)
+    mat_amp = 10.0 ** (mat_db / 20.0)
+    mat_pow = mat_amp**2
+    detections = np.zeros_like(mat_amp, dtype=bool)
 
-    for d in range(doppler_train + doppler_guard, mat_lin.shape[0] - (doppler_train + doppler_guard)):
-        for r in range(range_train + range_guard, mat_lin.shape[1] - (range_train + range_guard)):
+    for d in range(
+        doppler_train + doppler_guard,
+        mat_amp.shape[0] - (doppler_train + doppler_guard),
+    ):
+        for r in range(
+            range_train + range_guard,
+            mat_amp.shape[1] - (range_train + range_guard),
+        ):
             d0 = d - (doppler_train + doppler_guard)
             d1 = d + doppler_train + doppler_guard + 1
             r0 = r - (range_train + range_guard)
             r1 = r + range_train + range_guard + 1
-            window = mat_lin[d0:d1, r0:r1].copy()
+            window = mat_pow[d0:d1, r0:r1].copy()
             gd0 = doppler_train
             gd1 = doppler_train + 2 * doppler_guard + 1
             gr0 = range_train
@@ -77,12 +86,17 @@ def cfar2d_db(
             if non_zero.size == 0:
                 continue
             noise = np.mean(non_zero)
-            detections[d, r] = mat_lin[d, r] > scale * noise
+            detections[d, r] = mat_pow[d, r] > scale * noise
 
     return detections
 
 
 def main() -> None:
+    if not Path(DATA_PATH).exists():
+        raise SystemExit(
+            f"{DATA_PATH} not found. Download it with the curl command in README.md."
+        )
+
     with h5py.File(DATA_PATH, "r") as h5:
         dataset, path = find_rd_dataset(h5)
         frames = dataset[:DETECTIONS_TO_RENDER]
@@ -96,6 +110,8 @@ def main() -> None:
 
     frames_db = mag_db(frames)
     det_total = 0
+    vmin = np.percentile(frames_db, 5)
+    vmax = np.percentile(frames_db, 99)
 
     for idx in range(min(DETECTIONS_TO_RENDER, frames_db.shape[0])):
         rd_slice = frames_db[idx]
@@ -103,10 +119,11 @@ def main() -> None:
         det_total += detections.sum()
 
         plt.figure(figsize=(6, 4))
-        plt.imshow(rd_slice, origin="lower", aspect="auto")
+        plt.imshow(rd_slice, origin="lower", aspect="auto", vmin=vmin, vmax=vmax)
         yy, xx = np.where(detections)
         if yy.size:
             plt.scatter(xx, yy, s=12, edgecolors="white", facecolors="none")
+        plt.colorbar(label="Magnitude (dB)")
         plt.title(f"Measured RD Frame {idx} (dB) + 2-D CFAR")
         plt.xlabel("Range bin")
         plt.ylabel("Doppler bin")

@@ -3,8 +3,10 @@ Run with: uv run python 03_fmcw_range_cfar.py
 """
 from __future__ import annotations
 
-import numpy as np
+import csv
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 C0 = 3.0e8  # speed of light (m/s)
 BANDWIDTH = 200.0e6  # Hz
@@ -20,6 +22,9 @@ NOISE_STD = 0.5
 GUARD_CELLS = 4
 TRAIN_CELLS = 20
 CFAR_SCALE = 12.0
+
+
+np.random.seed(0)
 
 
 def fractional_delay(sig: np.ndarray, delay_s: float, fs: float) -> np.ndarray:
@@ -68,10 +73,12 @@ def main() -> None:
         guard_stop = TRAIN_CELLS + 2 * GUARD_CELLS + 1
         cutout[guard_start:guard_stop] = -np.inf
         linear_vals = 10.0 ** (cutout[cutout > -np.inf] / 20.0)
-        noise_est = np.mean(linear_vals)
-        threshold[idx] = 20.0 * np.log10(CFAR_SCALE * noise_est + 1e-12)
+        power_vals = linear_vals**2
+        noise_est = np.mean(power_vals)
+        threshold[idx] = 10.0 * np.log10(CFAR_SCALE * noise_est + 1e-12)
         detections[idx] = mag[idx] > threshold[idx]
 
+    threshold[np.isneginf(threshold)] = np.nan
     det_bins = np.where(detections)[0]
     det_ranges = ranges_m[det_bins]
 
@@ -93,6 +100,13 @@ def main() -> None:
     range_resolution = C0 / (2.0 * BANDWIDTH)
     print(f"Wrote {out_path} | Theoretical range resolution ~ {range_resolution:.2f} m")
     print("Detected ranges (m):", [round(val, 2) for val in det_ranges])
+
+    with open("out_03_detections.csv", "w", newline="") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(["range_m"])
+        for rng in det_ranges:
+            writer.writerow([float(rng)])
+    print("Wrote out_03_detections.csv")
 
 
 if __name__ == "__main__":

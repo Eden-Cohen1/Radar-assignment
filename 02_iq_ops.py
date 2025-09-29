@@ -3,8 +3,10 @@ Run with: uv run python 02_iq_ops.py
 """
 from __future__ import annotations
 
-import numpy as np
+from pathlib import Path
+
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.signal import firwin, lfilter, stft, get_window
 
 DATA_PATH = "data/fm_rds_250k_1Msamples.iq"
@@ -63,6 +65,11 @@ def save_spectrogram(sig: np.ndarray, fname: str) -> None:
 
 
 def main() -> None:
+    if not Path(DATA_PATH).exists():
+        raise SystemExit(
+            f"{DATA_PATH} not found. Download it with the curl command in README.md."
+        )
+
     data = np.fromfile(DATA_PATH, dtype=np.complex64)
     if data.size == 0:
         raise RuntimeError(f"Loaded zero samples from {DATA_PATH}. Did the download finish?")
