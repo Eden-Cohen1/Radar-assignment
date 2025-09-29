@@ -174,7 +174,7 @@ radar-zero-to-60/
 # once per machine/project
 uv python install 3.12 --default
 uv venv
-uv pip install numpy scipy matplotlib h5py sigmf
+uv pip install numpy scipy matplotlib h5py sigmf typer
 
 # per step
 uv run python 01_fft_basics.py
