@@ -5,3 +5,4 @@ data/
 out_*.png
 out_03_detections.csv
 artifacts/
+.ruff_cache/

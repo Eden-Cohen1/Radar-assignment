@@ -14,7 +14,10 @@ import numpy as np
 import typer
 from scipy.signal import firwin, get_window, lfilter, stft
 
-app = typer.Typer(add_completion=False, help="Walk through IQ data, frequency shifting, and FIR filtering.")
+app = typer.Typer(
+    add_completion=False,
+    help="Walk through IQ data, frequency shifting, and FIR filtering.",
+)
 
 DATA_PATH = Path("data/fm_rds_250k_1Msamples.iq")
 DEFAULT_FS = 250_000.0
@@ -29,10 +32,18 @@ def mag_db(z: np.ndarray) -> np.ndarray:
 
 def explain_signal(fs: float, shift_hz: float, lpf_cutoff: float) -> None:
     typer.echo("📡 Step 2: IQ, mixing, and filtering on real FM/RDS data")
-    typer.echo("  • IQ samples (I + jQ) carry both amplitude and phase, which lets us shift spectra cleanly.")
-    typer.echo(f"  • We'll load the capture at {fs/1e3:.0f} kSa/s and frequency-shift the 57 kHz RDS tone to DC.")
-    typer.echo(f"  • After the shift, a {lpf_cutoff/1e3:.1f} kHz low-pass isolates the subcarrier for inspection.")
-    typer.echo("  • Deliverables: PSD plots before/after shifts + spectrogram of the filtered baseband.")
+    typer.echo(
+        "  • IQ samples (I + jQ) carry both amplitude and phase, which lets us shift spectra cleanly."
+    )
+    typer.echo(
+        f"  • We'll load the capture at {fs / 1e3:.0f} kSa/s and frequency-shift the 57 kHz RDS tone to DC."
+    )
+    typer.echo(
+        f"  • After the shift, a {lpf_cutoff / 1e3:.1f} kHz low-pass isolates the subcarrier for inspection."
+    )
+    typer.echo(
+        "  • Deliverables: PSD plots before/after shifts + spectrogram of the filtered baseband."
+    )
 
 
 def ensure_data(path: Path) -> np.ndarray:
@@ -42,7 +53,9 @@ def ensure_data(path: Path) -> np.ndarray:
         )
     data = np.fromfile(path, dtype=np.complex64)
     if data.size == 0:
-        raise SystemExit(f"Loaded zero samples from {path}. Redownload the file (download may have failed).")
+        raise SystemExit(
+            f"Loaded zero samples from {path}. Redownload the file (download may have failed)."
+        )
     return data
 
 
@@ -93,8 +106,12 @@ def save_spectrogram(sig: np.ndarray, filename: str, fs: float) -> None:
 def main(
     path: Path = typer.Option(DATA_PATH, help="Path to the complex64 IQ capture."),
     fs: float = typer.Option(DEFAULT_FS, help="Sample rate in samples/second."),
-    shift_hz: float = typer.Option(DEFAULT_SHIFT, help="Frequency shift to center the subcarrier (Hz)."),
-    lpf_cutoff: float = typer.Option(DEFAULT_LPF, help="Low-pass cutoff after shifting (Hz)."),
+    shift_hz: float = typer.Option(
+        DEFAULT_SHIFT, help="Frequency shift to center the subcarrier (Hz)."
+    ),
+    lpf_cutoff: float = typer.Option(
+        DEFAULT_LPF, help="Low-pass cutoff after shifting (Hz)."
+    ),
 ) -> None:
     """Explain frequency translation and FIR filtering on a real IQ capture."""
 
@@ -112,16 +129,24 @@ def main(
 
     typer.echo("📊 Saving PSD snapshots (before shift, after shift, after LPF)…")
     save_fft(iq, "Raw FM band", "out_02_raw_psd.png", fs)
-    save_fft(shifted, f"Shifted by -{shift_hz/1e3:.0f} kHz", "out_02_shift_psd.png", fs)
+    save_fft(
+        shifted, f"Shifted by -{shift_hz / 1e3:.0f} kHz", "out_02_shift_psd.png", fs
+    )
     save_fft(filtered, "Low-pass filtered baseband", "out_02_lpf_psd.png", fs)
 
-    typer.echo("🎨 Saving spectrogram of the filtered baseband to show subcarrier dynamics…")
+    typer.echo(
+        "🎨 Saving spectrogram of the filtered baseband to show subcarrier dynamics…"
+    )
     save_spectrogram(filtered, "out_02_lpf_spectrogram.png", fs)
 
     typer.echo("Reflection prompts you can answer in report.md:")
     typer.echo("  • What evidence in the PSD confirms the shift worked?")
-    typer.echo("  • How does the spectrogram reveal that the RDS tone now sits at baseband?")
-    typer.echo("Results written: out_02_raw_psd.png, out_02_shift_psd.png, out_02_lpf_psd.png, out_02_lpf_spectrogram.png")
+    typer.echo(
+        "  • How does the spectrogram reveal that the RDS tone now sits at baseband?"
+    )
+    typer.echo(
+        "Results written: out_02_raw_psd.png, out_02_shift_psd.png, out_02_lpf_psd.png, out_02_lpf_spectrogram.png"
+    )
 
 
 if __name__ == "__main__":

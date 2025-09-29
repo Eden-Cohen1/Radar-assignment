@@ -15,7 +15,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import typer
 
-app = typer.Typer(add_completion=False, help="Simulate an FMCW radar sweep and explain the FFT-to-range journey.")
+app = typer.Typer(
+    add_completion=False,
+    help="Simulate an FMCW radar sweep and explain the FFT-to-range journey.",
+)
 
 C0 = 3.0e8  # Speed of light (m/s)
 
@@ -24,13 +27,23 @@ def mag_db(z: np.ndarray) -> np.ndarray:
     return 20.0 * np.log10(np.abs(z) + 1e-12)
 
 
-def describe_setup(bandwidth: float, chirp_time: float, fs: float, targets: List[Tuple[float, float]]) -> None:
+def describe_setup(
+    bandwidth: float, chirp_time: float, fs: float, targets: List[Tuple[float, float]]
+) -> None:
     slope = bandwidth / chirp_time
     typer.echo("📡 Step 3: Hello FMCW — mapping beat frequency to range")
-    typer.echo(f"  • Sweep bandwidth (B): {bandwidth/1e6:.1f} MHz, chirp time (T_c): {chirp_time*1e3:.1f} ms, sample rate: {fs/1e6:.1f} MSa/s")
-    typer.echo(f"  • Chirp slope S = B / T_c = {slope/1e12:.2f} THz/s (controls the beat ↔ range mapping).")
-    typer.echo("  • We'll inject a couple of simulated targets (range, SNR) and add complex white noise.")
-    typer.echo("  • Key equations: R = (c · f_b) / (2S) and ΔR = c / (2B). We'll print both.")
+    typer.echo(
+        f"  • Sweep bandwidth (B): {bandwidth / 1e6:.1f} MHz, chirp time (T_c): {chirp_time * 1e3:.1f} ms, sample rate: {fs / 1e6:.1f} MSa/s"
+    )
+    typer.echo(
+        f"  • Chirp slope S = B / T_c = {slope / 1e12:.2f} THz/s (controls the beat ↔ range mapping)."
+    )
+    typer.echo(
+        "  • We'll inject a couple of simulated targets (range, SNR) and add complex white noise."
+    )
+    typer.echo(
+        "  • Key equations: R = (c · f_b) / (2S) and ΔR = c / (2B). We'll print both."
+    )
     typer.echo("  • Deliverables: out_03_range_cfar.png + out_03_detections.csv.")
     for idx, (rng, snr) in enumerate(targets, start=1):
         typer.echo(f"    – Target {idx}: {rng:.1f} m with linear SNR {snr:.1f}")
@@ -96,11 +109,20 @@ def main(
     bandwidth: float = typer.Option(200e6, help="Chirp bandwidth B in Hz."),
     chirp_time: float = typer.Option(1e-3, help="Chirp time T_c in seconds."),
     fs: float = typer.Option(2e6, help="Sample rate in samples/second."),
-    noise_std: float = typer.Option(0.35, help="Standard deviation of additive complex noise."),
+    noise_std: float = typer.Option(
+        0.35, help="Standard deviation of additive complex noise."
+    ),
     guard_cells: int = typer.Option(6, help="Guard cells on each side for CA-CFAR."),
-    train_cells: int = typer.Option(18, help="Training cells on each side for CA-CFAR."),
-    scale: float = typer.Option(8.0, help="Noise scaling factor for CA-CFAR threshold."),
-    peak_margin: float = typer.Option(3.0, help="Multiplier to insist detections stand above threshold by this factor."),
+    train_cells: int = typer.Option(
+        18, help="Training cells on each side for CA-CFAR."
+    ),
+    scale: float = typer.Option(
+        8.0, help="Noise scaling factor for CA-CFAR threshold."
+    ),
+    peak_margin: float = typer.Option(
+        3.0,
+        help="Multiplier to insist detections stand above threshold by this factor.",
+    ),
     targets: List[float] = typer.Option(
         [35.0, 50.0, 62.0, 25.0],
         help="Pairs of range (m) and linear SNR: e.g., --targets 35 40 60 20",
@@ -109,7 +131,9 @@ def main(
     """Simulate beat notes, run a range FFT, and apply CA-CFAR with explanatory prints."""
 
     if len(targets) % 2 != 0:
-        raise typer.BadParameter("Provide an even number of values: range1 snr1 range2 snr2 …")
+        raise typer.BadParameter(
+            "Provide an even number of values: range1 snr1 range2 snr2 …"
+        )
     paired_targets = [(targets[i], targets[i + 1]) for i in range(0, len(targets), 2)]
 
     describe_setup(bandwidth, chirp_time, fs, paired_targets)
@@ -152,8 +176,15 @@ def main(
 
     range_resolution = C0 / (2.0 * bandwidth)
     typer.echo(f"✅ Saved {out_plot}")
-    typer.echo(f"  • Theoretical range resolution ΔR = c / (2B) = {range_resolution:.2f} m")
-    typer.echo("  • Detected range bins (meters): " + ", ".join(f"{val:.2f}" for val in det_ranges) if det_ranges.size else "  • No detections — adjust CFAR parameters or target SNR.")
+    typer.echo(
+        f"  • Theoretical range resolution ΔR = c / (2B) = {range_resolution:.2f} m"
+    )
+    typer.echo(
+        "  • Detected range bins (meters): "
+        + ", ".join(f"{val:.2f}" for val in det_ranges)
+        if det_ranges.size
+        else "  • No detections — adjust CFAR parameters or target SNR."
+    )
 
     out_csv = Path("out_03_detections.csv")
     with out_csv.open("w", newline="") as csv_file:
@@ -165,7 +196,9 @@ def main(
 
     typer.echo("Next questions to ponder:")
     typer.echo("  • How do the simulated target ranges compare to the detected peaks?")
-    typer.echo("  • What knob (B, T_c, or S) would you change to improve range resolution without lengthening runtime?")
+    typer.echo(
+        "  • What knob (B, T_c, or S) would you change to improve range resolution without lengthening runtime?"
+    )
 
 
 if __name__ == "__main__":

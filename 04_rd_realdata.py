@@ -16,7 +16,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import typer
 
-app = typer.Typer(add_completion=False, help="Load measured range–Doppler heatmaps and practice 2-D CA-CFAR.")
+app = typer.Typer(
+    add_completion=False,
+    help="Load measured range–Doppler heatmaps and practice 2-D CA-CFAR.",
+)
 
 DATA_PATH = Path("data/simerad60.hdf5")
 
@@ -27,10 +30,18 @@ def mag_db(z: np.ndarray) -> np.ndarray:
 
 def describe_plan(path: Path, frames: int) -> None:
     typer.echo("📡 Step 4: Real range–Doppler processing")
-    typer.echo("  • We'll open the SiMeRAD60 HDF5 file (TI AWR6843ISK demo) and auto-locate RD datasets.")
-    typer.echo(f"  • The script plots {frames} consecutive heatmaps, applies a simple 2-D CA-CFAR, and overlays detections.")
-    typer.echo("  • Outputs: out_04_rd_frame0/1/2.png showing magnitude in dB, with detections circled if present.")
-    typer.echo("  • Remember: columns ≈ range bins, rows ≈ Doppler bins (positive/negative velocities).")
+    typer.echo(
+        "  • We'll open the SiMeRAD60 HDF5 file (TI AWR6843ISK demo) and auto-locate RD datasets."
+    )
+    typer.echo(
+        f"  • The script plots {frames} consecutive heatmaps, applies a simple 2-D CA-CFAR, and overlays detections."
+    )
+    typer.echo(
+        "  • Outputs: out_04_rd_frame0/1/2.png showing magnitude in dB, with detections circled if present."
+    )
+    typer.echo(
+        "  • Remember: columns ≈ range bins, rows ≈ Doppler bins (positive/negative velocities)."
+    )
     typer.echo(f"  • Looking for file at {path} (download steps are in the README).")
 
 
@@ -139,9 +150,15 @@ def cfar2d_db(
 def main(
     path: Path = typer.Option(DATA_PATH, help="Path to the SiMeRAD60 HDF5 file."),
     frames: int = typer.Option(3, help="Number of consecutive RD frames to visualise."),
-    guard: Tuple[int, int] = typer.Option((2, 2), help="(Doppler, range) guard cells for 2-D CA-CFAR."),
-    train: Tuple[int, int] = typer.Option((6, 6), help="(Doppler, range) training cells."),
-    scale: float = typer.Option(6.0, help="Scaling factor for noise estimate in CA-CFAR."),
+    guard: Tuple[int, int] = typer.Option(
+        (2, 2), help="(Doppler, range) guard cells for 2-D CA-CFAR."
+    ),
+    train: Tuple[int, int] = typer.Option(
+        (6, 6), help="(Doppler, range) training cells."
+    ),
+    scale: float = typer.Option(
+        6.0, help="Scaling factor for noise estimate in CA-CFAR."
+    ),
 ) -> None:
     """Load real range–Doppler data, plot, and apply an intuitive 2-D CA-CFAR."""
 
@@ -185,8 +202,12 @@ def main(
 
     typer.echo(f"📈 Total detections across frames: {detections_total}")
     if detections_total == 0:
-        typer.echo("  • Tip: Reduce the scale factor or increase training cells to capture weaker targets.")
-    typer.echo("Think about: Do stationary objects cluster near Doppler≈0? How does CFAR balance misses vs false alarms?")
+        typer.echo(
+            "  • Tip: Reduce the scale factor or increase training cells to capture weaker targets."
+        )
+    typer.echo(
+        "Think about: Do stationary objects cluster near Doppler≈0? How does CFAR balance misses vs false alarms?"
+    )
 
 
 if __name__ == "__main__":

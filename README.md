@@ -184,6 +184,16 @@ uv run python 03_fmcw_range_cfar.py
 uv run python 04_rd_realdata.py
 ```
 
+## Formatting
+
+Use [ruff](https://docs.astral.sh/ruff/) via uv to keep the Python files tidy:
+
+```bash
+uvx ruff format
+```
+
+`uvx` will fetch ruff on demand and format every script in-place.
+
 ---
 
 ## Troubleshooting (frequent snags)

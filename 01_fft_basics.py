@@ -15,7 +15,10 @@ import numpy as np
 import typer
 from scipy.signal import get_window, stft
 
-app = typer.Typer(add_completion=False, help="Explore chirps, FFT leakage, and spectrograms with helpful narration.")
+app = typer.Typer(
+    add_completion=False,
+    help="Explore chirps, FFT leakage, and spectrograms with helpful narration.",
+)
 
 
 def mag_db(z: np.ndarray) -> np.ndarray:
@@ -25,11 +28,21 @@ def mag_db(z: np.ndarray) -> np.ndarray:
 
 def print_intro(fs: float, f_start: float, f_stop: float, duration: float) -> None:
     typer.echo("📡 Step 1: Building FFT & spectrogram intuition")
-    typer.echo("  • A chirp is a tone whose frequency slides over time. Here it sweeps linearly from"
-               f" {f_start/1e3:.1f} kHz to {f_stop/1e3:.1f} kHz across {duration*1e3:.0f} ms.")
-    typer.echo("  • We'll sample it at {0:.0f} kSa/s, which fixes the FFT bin spacing.".format(fs / 1e3))
-    typer.echo("  • Alongside the chirp we add a small tone that sits between FFT bins to expose leakage.")
-    typer.echo("  • Outputs: out_01_fft_spectrogram.png (time trace, instantaneous frequency, FFTs, and spectrogram).")
+    typer.echo(
+        "  • A chirp is a tone whose frequency slides over time. Here it sweeps linearly from"
+        f" {f_start / 1e3:.1f} kHz to {f_stop / 1e3:.1f} kHz across {duration * 1e3:.0f} ms."
+    )
+    typer.echo(
+        "  • We'll sample it at {0:.0f} kSa/s, which fixes the FFT bin spacing.".format(
+            fs / 1e3
+        )
+    )
+    typer.echo(
+        "  • Alongside the chirp we add a small tone that sits between FFT bins to expose leakage."
+    )
+    typer.echo(
+        "  • Outputs: out_01_fft_spectrogram.png (time trace, instantaneous frequency, FFTs, and spectrogram)."
+    )
 
 
 @app.command()
@@ -72,7 +85,9 @@ def main(
         return_onesided=False,
     )
 
-    typer.echo("📊 Plotting time trace, frequency sweep, FFT magnitudes, and spectrogram…")
+    typer.echo(
+        "📊 Plotting time trace, frequency sweep, FFT magnitudes, and spectrogram…"
+    )
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
 
     axes[0, 0].plot(t * 1e3, signal.real)
@@ -93,7 +108,9 @@ def main(
     axes[1, 0].set_ylabel("Magnitude (dB)")
     axes[1, 0].legend(loc="upper right")
 
-    mesh = axes[1, 1].pcolormesh(t_s * 1e3, f_s / 1e3, mag_db(stft_grid), shading="auto")
+    mesh = axes[1, 1].pcolormesh(
+        t_s * 1e3, f_s / 1e3, mag_db(stft_grid), shading="auto"
+    )
     axes[1, 1].set_title("Spectrogram (STFT)")
     axes[1, 1].set_xlabel("Time (ms)")
     axes[1, 1].set_ylabel("Frequency (kHz)")
@@ -106,11 +123,19 @@ def main(
 
     typer.echo(f"✅ Saved {output_path}")
     typer.echo("Key takeaways:")
-    typer.echo("  • Windowing suppresses leakage from off-bin tones at the expense of broader main lobes.")
-    typer.echo("  • STFTs reveal how frequency content evolves — nperseg↑ gives sharper frequency bins but blurrier time.")
-    typer.echo("  • Chirps underpin FMCW radar: the beat note after mixing is proportional to target range.")
+    typer.echo(
+        "  • Windowing suppresses leakage from off-bin tones at the expense of broader main lobes."
+    )
+    typer.echo(
+        "  • STFTs reveal how frequency content evolves — nperseg↑ gives sharper frequency bins but blurrier time."
+    )
+    typer.echo(
+        "  • Chirps underpin FMCW radar: the beat note after mixing is proportional to target range."
+    )
 
-    typer.echo("Try options like `--stft-window 2048 --stft-overlap 1536` to experiment with time/frequency trade-offs.")
+    typer.echo(
+        "Try options like `--stft-window 2048 --stft-overlap 1536` to experiment with time/frequency trade-offs."
+    )
 
 
 if __name__ == "__main__":
