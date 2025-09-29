@@ -2,6 +2,21 @@
 
 > Zero-to-sixty radar processing primer for Python-only undergrads (CLI + VS Code + internet, no hardware, no admin rights).
 
+## What You'll Need
+
+- A Mac, Windows, or Linux machine with command-line access and ~2 GB of free disk space (the real radar dataset is ~500 MB).
+- VS Code (or your favourite editor) and a basic comfort with Python scripts/run commands.
+- Internet access (no admin rights required).
+- Roughly 8–10 hours to work through all four steps and reflections.
+
+## How This Repo Flows
+
+1. Install [uv](https://docs.astral.sh/uv/) and bootstrap the project once.
+2. Work through Steps 1 → 4 in order. Each script teaches a key radar/DSP idea and saves specific deliverables into the project root (or `artifacts/` if you move them there).
+3. Answer the reflection prompts by copying `report_template.md` to `report.md` and filling in short responses.
+4. (Optional) Run the formatter with `uvx ruff format` to keep your code clean.
+5. Package `artifacts/` + `report.md` if you need to submit your work.
+
 ## Setup with UV (≈15 minutes)
 
 Install [uv](https://docs.astral.sh/uv/) once per workstation.
@@ -122,6 +137,7 @@ Every tutorial script uses [Typer](https://typer.tiangolo.com/) for a friendly C
   curl -L -o data/simerad60.hdf5 \
     "https://zenodo.org/records/14916564/files/data.hdf5?download=1"
   ```
+  _Heads-up: the download is ~481 MB and can take a few minutes._
 - **Run:**
   ```bash
   uv run python 04_rd_realdata.py
