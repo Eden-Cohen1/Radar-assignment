@@ -21,12 +21,14 @@ Project bootstrap:
 mkdir radar-zero-to-60 && cd radar-zero-to-60
 uv python install 3.12 --default
 uv venv
-uv pip install numpy scipy matplotlib h5py sigmf
+uv pip install numpy scipy matplotlib h5py sigmf typer
 ```
 
 Open the folder in VS Code and pick the `.venv` interpreter (`Python: Select Interpreter`).
 
 > `uv run <command>` executes inside the project environment; `uv pip` installs packages at lightning speed.
+
+Every tutorial script uses [Typer](https://typer.tiangolo.com/) for a friendly CLI. Run `uv run python <script>.py --help` to see adjustable parameters; the scripts narrate what each processing stage means so an FFT newcomer can follow along.
 
 ---
 
@@ -35,13 +37,15 @@ Open the folder in VS Code and pick the `.venv` interpreter (`Python: Select Int
 - **Purpose:** Build intuition for sampling, leakage, windowing, and STFT resolution trade-offs.
 - **Tasks:**
   1. Synthesize a linear chirp plus a near-bin complex tone.
-  2. Compare FFTs with and without a Hann window.
-  3. Generate an STFT spectrogram and vary `nperseg`/`noverlap`.
+  2. Visualise the chirp in time and instantaneous frequency.
+  3. Compare FFTs with and without a Hann window (see leakage vs sidelobes).
+  4. Generate a spectrogram (STFT) and experiment with `nperseg`/`noverlap` via CLI flags.
 - **Run:**
   ```bash
   uv run python 01_fft_basics.py
+  uv run python 01_fft_basics.py --help  # optional knobs
   ```
-- **Deliverable:** `out_01_fft_spectrogram.png` (three-panel figure: FFT no window, FFT Hann, spectrogram).
+- **Deliverable:** `out_01_fft_spectrogram.png` (time trace, inst. frequency, FFT comparison, spectrogram).
 - **Sanity checks (intuition):**
   - Larger `nperseg` narrows bins but blurs time; smaller does the opposite.
   - Hann window tames leakage but slightly widens the main lobe.
@@ -66,6 +70,7 @@ Open the folder in VS Code and pick the `.venv` interpreter (`Python: Select Int
 - **Run:**
   ```bash
   uv run python 02_iq_ops.py
+  uv run python 02_iq_ops.py --help  # optional knobs
   ```
 - **Deliverables:**
   - `out_02_raw_psd.png`
@@ -90,6 +95,7 @@ Open the folder in VS Code and pick the `.venv` interpreter (`Python: Select Int
 - **Run:**
   ```bash
   uv run python 03_fmcw_range_cfar.py
+  uv run python 03_fmcw_range_cfar.py --help  # explore CFAR/target knobs
   ```
 - **Deliverables:** `out_03_range_cfar.png`, `out_03_detections.csv` (per-range CSV); console prints theoretical `ΔR` and detected ranges.
 - **Key relations (with intuition):**
@@ -119,6 +125,7 @@ Open the folder in VS Code and pick the `.venv` interpreter (`Python: Select Int
 - **Run:**
   ```bash
   uv run python 04_rd_realdata.py
+  uv run python 04_rd_realdata.py --help  # tweak CA-CFAR windowing
   ```
 - **Deliverables:** `out_04_rd_frame0.png`, `out_04_rd_frame1.png`, `out_04_rd_frame2.png`.
 - **Sanity checks (intuition):**

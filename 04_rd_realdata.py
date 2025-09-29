@@ -1,26 +1,41 @@
-"""Step 4: Real range–Doppler + simple 2-D CA-CFAR.
-Run with: uv run python 04_rd_realdata.py
+"""Step 4 tutorial script: Real range–Doppler maps and 2-D CA-CFAR with guidance.
+
+Run with:
+    uv run python 04_rd_realdata.py
+    uv run python 04_rd_realdata.py --help
 """
+
 from __future__ import annotations
 
+import re
 from pathlib import Path
+from typing import Tuple
 
+import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-import h5py
-import re
+import typer
 
-DATA_PATH = "data/simerad60.hdf5"
-DETECTIONS_TO_RENDER = 3  # number of frames to visualise
+app = typer.Typer(add_completion=False, help="Load measured range–Doppler heatmaps and practice 2-D CA-CFAR.")
+
+DATA_PATH = Path("data/simerad60.hdf5")
 
 
 def mag_db(z: np.ndarray) -> np.ndarray:
     return 20.0 * np.log10(np.abs(z) + 1e-12)
 
 
-def find_rd_dataset(h5: h5py.File) -> tuple[h5py.Dataset, str]:
-    """Return the most plausible range–Doppler dataset and its path."""
-    candidates: list[tuple[int, str, h5py.Dataset]] = []
+def describe_plan(path: Path, frames: int) -> None:
+    typer.echo("📡 Step 4: Real range–Doppler processing")
+    typer.echo("  • We'll open the SiMeRAD60 HDF5 file (TI AWR6843ISK demo) and auto-locate RD datasets.")
+    typer.echo(f"  • The script plots {frames} consecutive heatmaps, applies a simple 2-D CA-CFAR, and overlays detections.")
+    typer.echo("  • Outputs: out_04_rd_frame0/1/2.png showing magnitude in dB, with detections circled if present.")
+    typer.echo("  • Remember: columns ≈ range bins, rows ≈ Doppler bins (positive/negative velocities).")
+    typer.echo(f"  • Looking for file at {path} (download steps are in the README).")
+
+
+def find_rd_dataset(h5: h5py.File) -> Tuple[h5py.Dataset, str]:
+    candidates = []
 
     def walk(obj: h5py.Group, prefix: str = "") -> None:
         for key, val in obj.items():
@@ -51,16 +66,45 @@ def find_rd_dataset(h5: h5py.File) -> tuple[h5py.Dataset, str]:
     return best_dataset, best_path
 
 
+def gather_frames(
+    h5: h5py.File,
+    dataset: h5py.Dataset,
+    path: str,
+    frames_to_render: int,
+) -> np.ndarray:
+    data = dataset[:]
+    if isinstance(data, np.ndarray) and data.ndim == 2:
+        collected = [data]
+        base_path, ds_name = path.rsplit("/", 1)
+        match = re.search(r"(.*?/frame_)(\d+)$", base_path)
+        if match:
+            prefix, idx_str = match.groups()
+            start_idx = int(idx_str)
+            for offset in range(1, frames_to_render):
+                next_path = f"{prefix}{start_idx + offset}/{ds_name}"
+                if next_path in h5:
+                    collected.append(h5[next_path][:])
+                if len(collected) == frames_to_render:
+                    break
+        data = np.stack(collected, axis=0)
+    else:
+        data = np.array(data)
+
+    if data.ndim == 2:
+        data = data[np.newaxis, ...]
+    if np.iscomplexobj(data):
+        data = np.abs(data)
+    return data
+
+
 def cfar2d_db(
     mat_db: np.ndarray,
-    guard: tuple[int, int] = (2, 2),
-    train: tuple[int, int] = (6, 6),
-    scale: float = 6.0,
+    guard: Tuple[int, int],
+    train: Tuple[int, int],
+    scale: float,
 ) -> np.ndarray:
-    """Rectangular CA-CFAR returning boolean detection mask."""
     doppler_guard, range_guard = guard
     doppler_train, range_train = train
-
     mat_amp = 10.0 ** (mat_db / 20.0)
     mat_pow = mat_amp**2
     detections = np.zeros_like(mat_amp, dtype=bool)
@@ -82,75 +126,68 @@ def cfar2d_db(
             gd1 = doppler_train + 2 * doppler_guard + 1
             gr0 = range_train
             gr1 = range_train + 2 * range_guard + 1
-            window[gd0:gd1, gr0:gr1] = 0.0  # zero guard + CUT area
+            window[gd0:gd1, gr0:gr1] = 0.0
             non_zero = window[window > 0.0]
             if non_zero.size == 0:
                 continue
             noise = np.mean(non_zero)
             detections[d, r] = mat_pow[d, r] > scale * noise
-
     return detections
 
 
-def main() -> None:
-    if not Path(DATA_PATH).exists():
+@app.command()
+def main(
+    path: Path = typer.Option(DATA_PATH, help="Path to the SiMeRAD60 HDF5 file."),
+    frames: int = typer.Option(3, help="Number of consecutive RD frames to visualise."),
+    guard: Tuple[int, int] = typer.Option((2, 2), help="(Doppler, range) guard cells for 2-D CA-CFAR."),
+    train: Tuple[int, int] = typer.Option((6, 6), help="(Doppler, range) training cells."),
+    scale: float = typer.Option(6.0, help="Scaling factor for noise estimate in CA-CFAR."),
+) -> None:
+    """Load real range–Doppler data, plot, and apply an intuitive 2-D CA-CFAR."""
+
+    if not path.exists():
         raise SystemExit(
-            f"{DATA_PATH} not found. Download it with the curl command in README.md."
+            f"{path} not found. Download it with the curl command listed in README.md before running this step."
         )
 
-with h5py.File(DATA_PATH, "r") as h5:
-    dataset, path = find_rd_dataset(h5)
-    frames = dataset[:]
-    if isinstance(frames, np.ndarray) and frames.ndim == 2:
-        collected = [frames]
-        base_path, ds_name = path.rsplit("/", 1)
-        match = re.search(r"(.*?/frame_)(\d+)$", base_path)
-        if match:
-            prefix, idx_str = match.groups()
-            start_idx = int(idx_str)
-            for offset in range(1, DETECTIONS_TO_RENDER):
-                next_path = f"{prefix}{start_idx + offset}/{ds_name}"
-                if next_path in h5:
-                    collected.append(h5[next_path][:])
-                if len(collected) == DETECTIONS_TO_RENDER:
-                    break
-        frames = np.stack(collected, axis=0)
-    else:
-        frames = np.array(frames)
+    describe_plan(path, frames)
 
-    print(f"Selected dataset: {path} shape={frames.shape}")
+    with h5py.File(path, "r") as h5:
+        dataset, dataset_path = find_rd_dataset(h5)
+        array = gather_frames(h5, dataset, dataset_path, frames)
 
-    if frames.ndim == 2:
-        frames = frames[np.newaxis, ...]
-    if np.iscomplexobj(frames):
-        frames = np.abs(frames)
+    typer.echo(f"✅ Selected dataset {dataset_path} shape={array.shape}")
 
-    frames_db = mag_db(frames)
-    det_total = 0
-    vmin = np.percentile(frames_db, 5)
-    vmax = np.percentile(frames_db, 99)
+    frames_db = mag_db(array)
+    vmin = float(np.percentile(frames_db, 5))
+    vmax = float(np.percentile(frames_db, 99))
+    detections_total = 0
 
-    for idx in range(min(DETECTIONS_TO_RENDER, frames_db.shape[0])):
+    for idx in range(min(frames, frames_db.shape[0])):
         rd_slice = frames_db[idx]
-        detections = cfar2d_db(rd_slice, guard=(2, 2), train=(6, 6), scale=6.0)
-        det_total += detections.sum()
+        detections = cfar2d_db(rd_slice, guard=guard, train=train, scale=scale)
+        detections_total += int(detections.sum())
 
-        plt.figure(figsize=(6, 4))
+        plt.figure(figsize=(6.5, 4.5))
         plt.imshow(rd_slice, origin="lower", aspect="auto", vmin=vmin, vmax=vmax)
         yy, xx = np.where(detections)
         if yy.size:
-            plt.scatter(xx, yy, s=12, edgecolors="white", facecolors="none")
+            plt.scatter(xx, yy, s=18, edgecolors="white", facecolors="none")
         plt.colorbar(label="Magnitude (dB)")
-        plt.title(f"Measured RD Frame {idx} (dB) + 2-D CFAR")
+        plt.title(f"Range–Doppler Frame {idx} + 2-D CA-CFAR")
         plt.xlabel("Range bin")
         plt.ylabel("Doppler bin")
         plt.tight_layout()
-        out_path = f"out_04_rd_frame{idx}.png"
+        out_path = Path(f"out_04_rd_frame{idx}.png")
         plt.savefig(out_path, dpi=160)
         plt.close()
+        typer.echo(f"  • Saved {out_path} ({detections.sum()} detections)")
 
-    print(f"Wrote out_04_rd_frame*.png | detections across frames: {int(det_total)}")
+    typer.echo(f"📈 Total detections across frames: {detections_total}")
+    if detections_total == 0:
+        typer.echo("  • Tip: Reduce the scale factor or increase training cells to capture weaker targets.")
+    typer.echo("Think about: Do stationary objects cluster near Doppler≈0? How does CFAR balance misses vs false alarms?")
 
 
 if __name__ == "__main__":
-    main()
+    app()
