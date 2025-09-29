@@ -16,23 +16,15 @@ SLOPE = BANDWIDTH / CHIRP_TIME
 
 TARGETS = [
     (35.0, 50.0),  # (range m, linear SNR)
-    (62.0, 20.0),
+    (62.0, 25.0),
 ]
-NOISE_STD = 0.5
-GUARD_CELLS = 4
-TRAIN_CELLS = 20
-CFAR_SCALE = 12.0
+NOISE_STD = 0.35
+GUARD_CELLS = 6
+TRAIN_CELLS = 18
+CFAR_SCALE = 8.0
 
 
 np.random.seed(0)
-
-
-def fractional_delay(sig: np.ndarray, delay_s: float, fs: float) -> np.ndarray:
-    """Apply fractional sample delay using frequency-domain phase shift."""
-    spectrum = np.fft.rfft(sig)
-    freqs = np.fft.rfftfreq(sig.size, d=1.0 / fs)
-    shifted = spectrum * np.exp(-1j * 2 * np.pi * freqs * delay_s)
-    return np.fft.irfft(shifted, n=sig.size)
 
 
 def mag_db(z: np.ndarray) -> np.ndarray:
@@ -43,42 +35,47 @@ def main() -> None:
     n_samp = int(CHIRP_TIME * FS)
     t = np.arange(n_samp) / FS
 
-    tx = np.exp(1j * np.pi * SLOPE * t**2)
-    rx = np.zeros_like(tx)
+    beat = np.zeros(n_samp, dtype=complex)
 
     for rng_m, snr_lin in TARGETS:
-        tau = 2.0 * rng_m / C0
-        echo = fractional_delay(tx, tau, FS)
-        echo_power = np.mean(np.abs(echo) ** 2)
-        rx += echo * np.sqrt(snr_lin / echo_power)
+        beat_freq = 2.0 * SLOPE * rng_m / C0
+        tone = np.exp(1j * 2 * np.pi * beat_freq * t)
+        beat += tone * np.sqrt(snr_lin)
 
     noise = NOISE_STD * (np.random.randn(n_samp) + 1j * np.random.randn(n_samp))
-    rx += noise
+    beat += noise
 
-    dechirped = rx * np.conj(tx)
     window = np.hanning(n_samp)
-    spectrum = np.fft.fft(dechirped * window)[: n_samp // 2]
+    spectrum = np.fft.fft(beat * window)[: n_samp // 2]
     beat_freq = np.arange(spectrum.size) * FS / n_samp
     ranges_m = beat_freq * C0 / (2.0 * SLOPE)
+    mag_amp = np.abs(spectrum)
+    mag_pow = mag_amp**2
     mag = mag_db(spectrum)
 
     # 1-D CA-CFAR (sliding window)
-    threshold = np.full_like(mag, -np.inf)
+    threshold_amp = np.zeros_like(mag_amp)
+    threshold = np.full_like(mag, np.nan)
     detections = np.zeros_like(mag, dtype=bool)
     for idx in range(TRAIN_CELLS + GUARD_CELLS, mag.size - (TRAIN_CELLS + GUARD_CELLS)):
         start = idx - (TRAIN_CELLS + GUARD_CELLS)
         stop = idx + TRAIN_CELLS + GUARD_CELLS + 1
-        cutout = mag[start:stop].copy()
+        cutout = mag_pow[start:stop].copy()
         guard_start = TRAIN_CELLS
         guard_stop = TRAIN_CELLS + 2 * GUARD_CELLS + 1
-        cutout[guard_start:guard_stop] = -np.inf
-        linear_vals = 10.0 ** (cutout[cutout > -np.inf] / 20.0)
-        power_vals = linear_vals**2
-        noise_est = np.mean(power_vals)
-        threshold[idx] = 10.0 * np.log10(CFAR_SCALE * noise_est + 1e-12)
-        detections[idx] = mag[idx] > threshold[idx]
+        cutout[guard_start:guard_stop] = 0.0
+        valid = cutout[cutout > 0.0]
+        if valid.size == 0:
+            continue
+        noise_est = np.mean(valid)
+        threshold_pow = CFAR_SCALE * noise_est
+        threshold_amp[idx] = np.sqrt(threshold_pow)
+        threshold[idx] = 20.0 * np.log10(threshold_amp[idx] + 1e-12)
+        if mag_amp[idx] > threshold_amp[idx] * 3.0:
+            left = mag_amp[idx - 1]
+            right = mag_amp[idx + 1]
+            detections[idx] = mag_amp[idx] >= left and mag_amp[idx] >= right
 
-    threshold[np.isneginf(threshold)] = np.nan
     det_bins = np.where(detections)[0]
     det_ranges = ranges_m[det_bins]
 

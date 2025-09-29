@@ -5,9 +5,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import h5py
 import matplotlib.pyplot as plt
 import numpy as np
+import h5py
+import re
 
 DATA_PATH = "data/simerad60.hdf5"
 DETECTIONS_TO_RENDER = 3  # number of frames to visualise
@@ -97,9 +98,25 @@ def main() -> None:
             f"{DATA_PATH} not found. Download it with the curl command in README.md."
         )
 
-    with h5py.File(DATA_PATH, "r") as h5:
-        dataset, path = find_rd_dataset(h5)
-        frames = dataset[:DETECTIONS_TO_RENDER]
+with h5py.File(DATA_PATH, "r") as h5:
+    dataset, path = find_rd_dataset(h5)
+    frames = dataset[:]
+    if isinstance(frames, np.ndarray) and frames.ndim == 2:
+        collected = [frames]
+        base_path, ds_name = path.rsplit("/", 1)
+        match = re.search(r"(.*?/frame_)(\d+)$", base_path)
+        if match:
+            prefix, idx_str = match.groups()
+            start_idx = int(idx_str)
+            for offset in range(1, DETECTIONS_TO_RENDER):
+                next_path = f"{prefix}{start_idx + offset}/{ds_name}"
+                if next_path in h5:
+                    collected.append(h5[next_path][:])
+                if len(collected) == DETECTIONS_TO_RENDER:
+                    break
+        frames = np.stack(collected, axis=0)
+    else:
+        frames = np.array(frames)
 
     print(f"Selected dataset: {path} shape={frames.shape}")
 

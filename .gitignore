@@ -4,3 +4,4 @@ __pycache__/
 data/
 out_*.png
 out_03_detections.csv
+artifacts/

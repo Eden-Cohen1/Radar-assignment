@@ -83,10 +83,10 @@ Open the folder in VS Code and pick the `.venv` interpreter (`Python: Select Int
 
 - **Purpose:** Connect FFT intuition to FMCW ranging and adaptive detection.
 - **Tasks:**
-  1. Simulate a single up-chirp (`B=200 MHz`, `Tc=1 ms`, `fs=2 MHz`).
-  2. Inject two fractional-delay targets plus AWGN.
-  3. Dechirp, window, FFT to obtain the range spectrum.
-  4. Apply 1-D CA-CFAR with tunable guard/train cells.
+  1. Use the FMCW relations to turn two target ranges into beat frequencies.
+  2. Synthesize the dechirped beat signal as the sum of those tones plus complex AWGN.
+  3. Window and FFT the beat to get a range spectrum, then run 1-D CA-CFAR.
+  4. Export both the annotated PNG and a CSV listing the detected range bins.
 - **Run:**
   ```bash
   uv run python 03_fmcw_range_cfar.py
@@ -126,6 +126,24 @@ Open the folder in VS Code and pick the `.venv` interpreter (`Python: Select Int
   - CFAR parameters control the false alarm vs miss balance.
   - Colorbar + shared dB range make it easy to compare frames at a glance.
   - HDF5 behaves like folders (groups) containing NumPy-like datasets.
+
+---
+
+## Submission Checklist & Quick Reflection
+
+Keep your generated outputs handy by copying them into an `artifacts/` folder (already ignored by git). Turn in:
+
+- `out_01_fft_spectrogram.png`
+- `out_02_raw_psd.png`, `out_02_shift_psd.png`, `out_02_lpf_psd.png`, `out_02_lpf_spectrogram.png`
+- `out_03_range_cfar.png`, `out_03_detections.csv`
+- `out_04_rd_frame0.png`, `out_04_rd_frame1.png`, `out_04_rd_frame2.png`
+- A short `report.md` with the reflection answers below (1–3 sentences each is plenty).
+
+Reflection prompts:
+1. Step 1: What changed when you switched from the rectangular FFT to the Hann-windowed FFT, and why does that matter for radar processing?
+2. Step 2: How did you confirm that the 57 kHz RDS subcarrier was shifted to baseband and preserved by the low-pass filter?
+3. Step 3: The script prints both the theoretical range resolution and the detected ranges. How are they linked, and what happens to ∆R if you halve the sweep bandwidth?
+4. Step 4: If the 2-D CA-CFAR misses a target you can see in the RD map, which parameter would you tweak first and why?
 
 ---
 
