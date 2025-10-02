@@ -273,3 +273,5 @@ A learner at “60% ready” can:
 ---
 
 Happy radar hacking! Predict your plots before hitting enter, and tweak one knob at a time.
+#   R a d a r - a s s i g n m e n t  
+ 
